@@ -15,12 +15,43 @@ export function activate(context: vscode.ExtensionContext) {
 	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('extension.helloWorld', () => {
 		// The code you place here will be executed every time your command is executed
+		const { window } = vscode;
+		const documentData = window.activeTextEditor.document;
+
+		const extensionIdx = documentData.fileName.lastIndexOf(".");
+		const extension = documentData.fileName.slice(extensionIdx + 1);
+		const bracketPairs:object = {}
+		const openingBracketStack = []
+
+		if (isStyleExtension(extension)) {
+			for (let i = 0; i < documentData.lineCount; i++){
+				const line = documentData.lineAt(i).text;
+				if (line.includes('{')) {
+					openingBracketStack.push(i + 1)
+				}
+				if (line.includes('}')) {
+					bracketPairs[i + 1] = openingBracketStack.pop()
+				}
+			}
+		}
+
+		for (const endLine in bracketPairs){
+			console.log('startLine is', bracketPairs[endLine])
+			console.log('endline is', endLine)
+		}
 
 		// Display a message box to the user
 		vscode.window.showInformationMessage('Hello World!');
 	});
 
 	context.subscriptions.push(disposable);
+}
+
+const isStyleExtension = (extension: string) => {
+	if (extension === 'css' || extension === 'scss'){
+		return true
+	}
+	return false
 }
 
 // this method is called when your extension is deactivated
