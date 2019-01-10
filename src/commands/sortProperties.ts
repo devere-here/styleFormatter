@@ -6,41 +6,9 @@ let sortProperties = vscode.commands.registerCommand('extension.sortProperties',
 
   const styleObj = createNestedStyleObject(documentData)
 
-  let edit = new WorkspaceEdit()
-  edit = someFunc(styleObj, documentData.fileName, 0, 0, edit)
-
+  const edit = new WorkspaceEdit()
+  someFunc(styleObj, documentData.fileName, 0, 0, edit)
   workspace.applyEdit(edit)
-
-  // const { workspace, WorkspaceEdit } = vscode;
-  // const edit = new WorkspaceEdit();
-
-  // for (const endLine in bracketPairs) {
-  //   const startLine = bracketPairs[endLine]
-  //   let index = startLine
-  //   const lineArray = []
-
-  //   while (index < endLine) {
-  //     const line = documentData.lineAt(+index).text
-  //     if (line) {
-  //       lineArray.push(line)
-  //     }
-  //     index++
-  //   }
-
-  //   lineArray.sort()
-
-  //   const { Position, Range, Uri } = vscode
-  //   const uri = Uri.file(documentData.fileName)
-
-  //   lineArray.forEach((line, idx) => {
-  //     const start = new Position(+startLine + idx, 0)
-  //     const end = new Position(+startLine + idx, 140)
-  //     edit.replace(uri, new Range(start, end), line);
-  //   })
-
- // }
-
-  // workspace.applyEdit(edit);
 });
 
 const isStyleExtension = (extension: string) => {
@@ -101,27 +69,34 @@ const someFunc = (styleObj, fileName, startLine, indent, edit) => {
       const start = new Position(+startLine, indent)
       const end = new Position(+startLine, 140)
       edit.replace(uri, new Range(start, end), line)
-      console.log(startLine, ' - ', line)
       startLine++
     })
-    const p1 = new Position(+startLine, indent)
-    const p2 = new Position(+startLine, 140)
-    edit.replace(uri, new Range(p1, p2), '')
-    startLine++
+
+    if (objArr.length) {
+      const p1 = new Position(+startLine, indent)
+      const p2 = new Position(+startLine, 140)
+      edit.replace(uri, new Range(p1, p2), '')
+      startLine++
+    }
   }
 
   objArr.forEach(objKey => {
     const start = new Position(+startLine, indent)
     const end = new Position(+startLine, 140)
     edit.replace(uri, new Range(start, end), objKey)
-    console.log(startLine, ' - ', objKey)
-    someFunc(styleObj[objKey], fileName, startLine + 1, 0, edit)
+    const editObj = someFunc(styleObj[objKey], fileName, ++startLine, 0, edit)
+
+    let { newStartLine } = editObj
+
+    startLine = newStartLine
+
+    const p3 = new Position(+startLine, indent)
+    const p4 = new Position(+startLine, 140)
+    edit.replace(uri, new Range(p3, p4), '}')
+    startLine++
   })
-  // startLine++
-  // const p3 = new Position(+startLine, indent)
-  // const p4 = new Position(+startLine, 140)
-  // edit.replace(uri, new Range(p3, p4), '}')
-  return edit
+
+  return { edit, newStartLine: startLine }
 }
 
 export default sortProperties
