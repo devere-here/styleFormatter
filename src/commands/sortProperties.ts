@@ -7,8 +7,18 @@ let sortProperties = vscode.commands.registerCommand('extension.sortProperties',
   const styleObj = createNestedStyleObject(documentData)
 
   const edit = new WorkspaceEdit()
-  someFunc(styleObj, documentData.fileName, 0, 0, edit)
+  const replaceLine = replaceLineWrapper(documentData.fileName, edit)
+
+  const editObj = someFunc(styleObj, documentData.fileName, 0, 0, edit, replaceLine)
+
+  let { newStartLine } = editObj
+
+  for (let i = newStartLine; i < documentData.lineCount; i++) {
+    replaceLine('', i, 0)
+  }
+
   workspace.applyEdit(edit)
+
 });
 
 const isStyleExtension = (extension: string) => {
@@ -29,7 +39,8 @@ const createNestedStyleObject = (documentData: Object) => {
     currentStack[0] = currentObj
 
     for (let i = 0; i < documentData.lineCount; i++) {
-      const line = documentData.lineAt(i).text
+      let line = documentData.lineAt(i).text
+      line = line.trim()
       if (line.includes('{')) {
         currentStack[0][line] = {}
         currentStack.unshift(currentStack[0][line])
@@ -47,10 +58,7 @@ const createNestedStyleObject = (documentData: Object) => {
   return currentStack[0]
 }
 
-const someFunc = (styleObj, fileName, startLine, indent, edit) => {
-
-  const { Position, Range, Uri } = vscode
-  const uri = Uri.file(fileName)
+const someFunc = (styleObj, fileName, startLine, indent, edit, replaceLine) => {
 
   const stringArr = []
   const objArr = []
@@ -66,37 +74,48 @@ const someFunc = (styleObj, fileName, startLine, indent, edit) => {
   if (stringArr.length) {
     stringArr.sort()
     stringArr.forEach((line, idx) => {
-      const start = new Position(+startLine, indent)
-      const end = new Position(+startLine, 140)
-      edit.replace(uri, new Range(start, end), line)
+      replaceLine(line, +startLine, indent)
       startLine++
     })
 
     if (objArr.length) {
-      const p1 = new Position(+startLine, indent)
-      const p2 = new Position(+startLine, 140)
-      edit.replace(uri, new Range(p1, p2), '')
+      replaceLine('', +startLine, indent)
       startLine++
     }
   }
 
   objArr.forEach(objKey => {
-    const start = new Position(+startLine, indent)
-    const end = new Position(+startLine, 140)
-    edit.replace(uri, new Range(start, end), objKey)
-    const editObj = someFunc(styleObj[objKey], fileName, ++startLine, 0, edit)
+    replaceLine(objKey, +startLine, indent)
+    const editObj = someFunc(styleObj[objKey], fileName, ++startLine, indent + 2, edit, replaceLine)
 
     let { newStartLine } = editObj
 
     startLine = newStartLine
-
-    const p3 = new Position(+startLine, indent)
-    const p4 = new Position(+startLine, 140)
-    edit.replace(uri, new Range(p3, p4), '}')
+    replaceLine('}', +startLine, indent)
     startLine++
   })
 
   return { edit, newStartLine: startLine }
+}
+
+const replaceLineWrapper = (fileName, edit) => (text, lineNumber, indent) => {
+  const { Position, Range, Uri } = vscode
+  const uri = Uri.file(fileName)
+  const newLine = insertIndent(text, indent)
+  const start = new Position(+lineNumber, 0)
+  const end = new Position(+lineNumber, 140)
+
+  edit.replace(uri, new Range(start, end), newLine)
+}
+
+const insertIndent = (text, indent) => {
+  let str = ''
+
+  for (let i = 0; i < indent; i++){
+    str += ' '
+  }
+
+  return str.concat(text)
 }
 
 export default sortProperties
