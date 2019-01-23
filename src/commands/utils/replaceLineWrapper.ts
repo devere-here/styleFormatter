@@ -1,6 +1,11 @@
 import * as vscode from 'vscode'
+import { insertIndent } from './insertIndent'
 
-const replaceLineWrapper = (fileName, edit) => (text, lineNumber, indent) => {
+interface editObject {
+  replace: function,
+}
+
+export const replaceLineWrapper = (fileName: string, edit: editObject) => (text: string, lineNumber: string, indent: number) => {
   const { Position, Range, Uri } = vscode
   const uri = Uri.file(fileName)
   const newLine = insertIndent(text, indent)

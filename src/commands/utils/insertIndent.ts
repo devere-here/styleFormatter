@@ -1,4 +1,4 @@
-const insertIndent = (text, indent) => {
+export const insertIndent = (text:string, indent:number) => {
   let str = ''
 
   for (let i = 0; i < indent; i++){

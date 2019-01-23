@@ -1,4 +1,6 @@
-const separateObjectsAndProperties = (styleObj) => {
+import { styleObj } from './createSortedStyleObject'
+
+export const separateObjectsAndProperties = (styleObj: styleObj) => {
   const propertyArr = []
   const objArr = []
 
